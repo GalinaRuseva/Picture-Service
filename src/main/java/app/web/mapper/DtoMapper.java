@@ -11,6 +11,7 @@ public class DtoMapper {
 
         return PictureUploadResponse.builder()
                 .uploadDate(picture.getUploadDate())
+                .pictureOriginalFileName(picture.getOriginalFileName())
                 .id(picture.getId())
                 .build();
     }

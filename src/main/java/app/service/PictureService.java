@@ -3,6 +3,7 @@ package app.service;
 import app.exception.PictureNotFoundException;
 import app.model.Picture;
 import app.repository.PictureRepository;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,29 +35,29 @@ public class PictureService {
         this.pictureRepository = pictureRepository;
     }
 
-    //// Save image in a local directory
+    // Save image in a local directory
     public Picture savePictureToStorage(MultipartFile pictureFile) {
-        if(pictureFile == null)
+        if (pictureFile == null)
             throw new PictureNotFoundException();
 
         UUID pictureId = UUID.randomUUID();
-        String pictureName = pictureId.toString();
-        log.info("Saving picture to storage with id [%s]".formatted(pictureName));
+
         try {
-            Path filePath = fileStorageLocation.resolve(pictureName);
+            Path filePath = fileStorageLocation.resolve(pictureId.toString());
 
             if (!Files.exists(fileStorageLocation)) {
                 Files.createDirectories(fileStorageLocation);
             }
 
             Files.copy(pictureFile.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            log.info("Saving picture to storage with id [%s]".formatted(pictureId.toString()));
 
             String pictureUri = ServletUriComponentsBuilder.fromCurrentContextPath()
                     .path("api/v1/pictures")
                     .path("/view/")
-                    .path(pictureName)
+                    .path(pictureId.toString())
                     .toUriString();
-            // http://localhost:8081/api/v1/pictures/view/uuuid_name.jpg
+            // http://localhost:8081/api/v1/pictures/view/uuuid.jpg
 
             Picture picture = Picture.builder()
                     .id(pictureId)
@@ -73,28 +74,28 @@ public class PictureService {
             return picture;
 
         } catch (Exception e) {
-            throw new RuntimeException("Could not store picture " + pictureName + ". Please try again!", e);
+            throw new RuntimeException("Could not store picture " + pictureId + ". Please try again!", e);
         }
     }
 
     // get image data from database
     public Optional<Picture> getPictureById(UUID pictureId) {
+
         return pictureRepository.findById(pictureId);
     }
 
-    // To view an image
-    public byte[] getPicture(String pictureName) {
+    // to view an image
+    public byte[] getPicture(String picId) {
         try {
-            Path picturePath = Path.of(String.valueOf(fileStorageLocation), pictureName);
+            Path picturePath = Path.of(String.valueOf(fileStorageLocation), picId);
 
             if (Files.exists(picturePath)) {
                 return Files.readAllBytes(picturePath);
             } else {
-                throw new PictureNotFoundException("Picture with name [%s] not found".formatted(pictureName));
+                throw new PictureNotFoundException("Picture with id [%s] not found".formatted(picId));
             }
         } catch (Exception e) {
-            //TODO: some other exception
-            throw new PictureNotFoundException("Picture with name [%s] not found".formatted(pictureName));
+            throw new PictureNotFoundException("Picture with id [%s] not found".formatted(picId));
         }
     }
 
@@ -106,23 +107,25 @@ public class PictureService {
         return contentType;
     }
 
-    // Delete an image
+    // delete an image
     public void deletePicture(UUID pictureId) {
         Path picturePath = Path.of(String.valueOf(fileStorageLocation), String.valueOf(pictureId));
 
-        try {
-            Optional<Picture> optionalPicture = pictureRepository.findById(pictureId);
-            if (optionalPicture.isEmpty()) {
-                throw new PictureNotFoundException("Picture with name [%s] does not found".formatted(pictureId));
-            }
 
+        Optional<Picture> optionalPicture = pictureRepository.findById(pictureId);
+        if (optionalPicture.isEmpty()) {
+            throw new PictureNotFoundException("Picture with id [%s] not found".formatted(pictureId));
+        }
+
+        try {
             Picture picture = optionalPicture.get();
 
             if (Files.exists(picturePath)) {
                 Files.delete(picturePath);
                 pictureRepository.delete(picture);
-                log.info("Successfully deleted picture with name:[%s]".formatted(pictureId));
+                log.info("Successfully deleted picture with id:[%s]".formatted(pictureId));
             }
+
         } catch (Exception e) {
             throw new PictureNotFoundException("Picture with name [%s] not found".formatted(pictureId));
         }

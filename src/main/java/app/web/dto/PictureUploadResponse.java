@@ -12,7 +12,7 @@ public class PictureUploadResponse {
 
     private UUID id;
 
-    private String pictureUniqueName;
+    private String pictureOriginalFileName;
 
     private LocalDateTime uploadDate;
 }

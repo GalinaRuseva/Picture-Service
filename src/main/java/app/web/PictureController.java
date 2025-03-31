@@ -44,7 +44,6 @@ public class PictureController {
 
         final String picId = pictureId.toString();
         byte[] pictureFromStorage = pictureService.getPicture(picId);
-        //TODO: use mapper here.
         Optional<Picture> pictureById = pictureService.getPictureById(pictureId);
 
         return pictureById.map(picture ->

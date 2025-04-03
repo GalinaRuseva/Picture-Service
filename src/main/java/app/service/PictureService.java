@@ -3,7 +3,6 @@ package app.service;
 import app.exception.PictureNotFoundException;
 import app.model.Picture;
 import app.repository.PictureRepository;
-import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
